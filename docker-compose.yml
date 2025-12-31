@@ -4,11 +4,23 @@ services:
     networks:
       - labnet
 
-  service_b:
-    image: ghcr.io/johanan26/cicd2_lab6_service_b/service_b:latest
+  budgetair_flight:
+    image: ghcr.io/sean-maloney/cicd2-budgetair-flight/budgetair_flight
+    networks:
+      - labnet
+
+  budgetair_payment:
+    image: ghcr.io/johanan26/cicd2-budget-air-payment/budgetair_payment
+    networks:
+      - labnet
+
+  budgetair_task:
+    image: ghcr.io/johanan26/cicd2-budget-air-task/budgetair_task
     env_file: ./.env
     depends_on:
-      - service_a
+      - budgetair_user
+      - budgetair_flight
+      - budgetair_payment
     networks:
       - labnet
 networks:
