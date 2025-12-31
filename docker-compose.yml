@@ -1,0 +1,15 @@
+services:
+  budgetair_user:
+    image: ghcr.io/johanan26/cicd2-budetair-user/budgetair_user
+    networks:
+      - labnet
+
+  service_b:
+    image: ghcr.io/johanan26/cicd2_lab6_service_b/service_b:latest
+    env_file: ./.env
+    depends_on:
+      - service_a
+    networks:
+      - labnet
+networks:
+  labnet:
