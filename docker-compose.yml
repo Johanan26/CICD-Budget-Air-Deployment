@@ -1,27 +1,73 @@
 services:
-  budgetair_user:
-    image: ghcr.io/johanan26/cicd2-budetair-user/budgetair_user
-    networks:
-      - labnet
+  db:
+    image: postgres:16
+    container_name: budgetair-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_db: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
-  budgetair_flight:
-    image: ghcr.io/sean-maloney/cicd2-budgetair-flight/budgetair_flight
-    networks:
-      - labnet
-
-  budgetair_payment:
-    image: ghcr.io/johanan26/cicd2-budget-air-payment/budgetair_payment
-    networks:
-      - labnet
-
-  budgetair_task:
-    image: ghcr.io/johanan26/cicd2-budget-air-task/budgetair_task
-    env_file: ./.env
+  users:
+    build: ./CICD2-BudgetAir-User 
+    container_name: budgetair-users
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/users_db
+    ports:
+      - "8001:8001"
     depends_on:
-      - budgetair_user
-      - budgetair_flight
-      - budgetair_payment
-    networks:
-      - labnet
-networks:
-  labnet:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  flights:
+    build: ./CICD2-BudgetAir-Flights
+    container_name: budgetair_flights
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres@db:5432/flights_db
+    ports:
+      - "8003:8003"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+   
+
+  payments:
+    build: ./CICD2-BudgetAir-Payments
+    container_name: budgetair_payments
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres@db:5432/payments_db
+    ports:
+      - "8002:8002"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  task:
+    build: ./CICD2-BudgetAir-Task
+    container_name: budgetair-task
+    environment:
+      USERS_URL: http://users:8001
+      FLIGHTS_URL: http://flights:8003
+      PAYMENTS_URL: http://payments:8002
+      REQUEST_TIMEOUT_SECONDS: "10"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - users
+      - flights
+      - payments
+    restart: unless-stopped
+
+volumes:
+  pgdata:
