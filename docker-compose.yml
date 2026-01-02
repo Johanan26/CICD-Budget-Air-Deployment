@@ -3,24 +3,24 @@ services:
     image: postgres:16
     container_name: budgetair-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_db: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 20
 
   users:
-    build: ./CICD2-BudgetAir-User 
-    container_name: budgetair-users
+    image: ghcr.io/johanan26/cicd2-budetair-user/budgetair_user:latest
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/users_db
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/users_db
     ports:
       - "8001:8001"
     depends_on:
@@ -29,10 +29,9 @@ services:
     restart: unless-stopped
 
   flights:
-    build: ./CICD2-BudgetAir-Flights
-    container_name: budgetair_flights
+    image: ghcr.io/sean-maloney/cicd2-budgetair-flight/budgetair_flight:9fefff082239adaac6fd6fefa200fdde39e52b52
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres@db:5432/flights_db
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/flights_db
     ports:
       - "8003:8003"
     depends_on:
@@ -42,10 +41,9 @@ services:
    
 
   payments:
-    build: ./CICD2-BudgetAir-Payments
-    container_name: budgetair_payments
+    image: ghcr.io/johanan26/cicd2-budget-air-payment/budgetair_payment:latest
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres@db:5432/payments_db
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/payments_db
     ports:
       - "8002:8002"
     depends_on:
@@ -54,13 +52,13 @@ services:
     restart: unless-stopped
 
   task:
-    build: ./CICD2-BudgetAir-Task
-    container_name: budgetair-task
+    image: ghcr.io/johanan26/cicd2-budget-air-task/budgetair_task:e48d2e0276b41f82ba82a4fe983fed36aaef2d9f
     environment:
       USERS_URL: http://users:8001
       FLIGHTS_URL: http://flights:8003
       PAYMENTS_URL: http://payments:8002
       REQUEST_TIMEOUT_SECONDS: "10"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/task_db
     ports:
       - "8000:8000"
     depends_on:
