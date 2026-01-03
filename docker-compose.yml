@@ -29,7 +29,7 @@ services:
     restart: unless-stopped
 
   flights:
-    image: ghcr.io/sean-maloney/cicd2-budgetair-flight/budgetair_flight:9fefff082239adaac6fd6fefa200fdde39e52b52
+    image: ghcr.io/sean-maloney/cicd2-budgetair-flight/budgetair_flight:latest
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/flights_db
     ports:
@@ -52,7 +52,7 @@ services:
     restart: unless-stopped
 
   task:
-    image: ghcr.io/johanan26/cicd2-budget-air-task/budgetair_task:e48d2e0276b41f82ba82a4fe983fed36aaef2d9f
+    image: ghcr.io/johanan26/cicd2-budget-air-task/budgetair_task:latest
     environment:
       USERS_URL: http://users:8001
       FLIGHTS_URL: http://flights:8003
@@ -65,6 +65,14 @@ services:
       - users
       - flights
       - payments
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/johanan26/cicd2-budget-air-frontend/budgetair_frontend:latest
+    ports:
+      - "3000:80"
+    depends_on:
+      - task
     restart: unless-stopped
 
 volumes:
